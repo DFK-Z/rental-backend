@@ -7,7 +7,9 @@ import { EquipmentsModule } from './equipments/equipments.module';
 import { CategoriesModule } from './categories/categories.module';
 import { RentalsModule } from './rentals/rentals.module';
 import { PaymentsModule } from './payments/payments.module';
-import { AdminModule } from './admin/admin.module'; // ← ОДИН РАЗ!
+import { AdminModule } from './admin/admin.module';
+import { PromoCodesModule } from './promo-codes/promo-codes.module'; // ← ОДИН РАЗ!
+import { EquipmentAvailabilityModule } from './equipment-availability/equipment-availability.module';
 
 @Module({
   imports: [
@@ -19,7 +21,10 @@ import { AdminModule } from './admin/admin.module'; // ← ОДИН РАЗ!
     CategoriesModule,
     RentalsModule,
     PaymentsModule,
+    PromoCodesModule,
+    EquipmentAvailabilityModule,
     AdminModule,
+    EquipmentAvailabilityModule,
   ],
 })
 export class AppModule {}

@@ -12,12 +12,12 @@ model User {
   email     String   @unique
   name      String
   password  String
-  role      String   @default("client") // ТЗ: guest, client, admin
+  role      String   @default("client")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Связи (ТОЛЬКО эти!)
-  rentals Rental[] // Пользователь имеет бронирования
+  // ТОЛЬКО нужные связи
+  rentals Rental[]
 
   @@map("users")
 }
@@ -29,10 +29,10 @@ model Category {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Связи (ТОЛЬКО эти!)
+  // Связи
   parent    Category?   @relation("CategoryToCategory", fields: [parentId], references: [id])
   children  Category[]  @relation("CategoryToCategory")
-  equipment Equipment[] // Категория содержит оборудование
+  equipment Equipment[]
 
   @@map("categories")
 }
@@ -41,16 +41,17 @@ model Equipment {
   id           Int      @id @default(autoincrement())
   title        String
   description  String
-  priceCents   Int      @map("price_cents") // ТЗ: цена в копейках/центах
-  depositCents Int?     @map("deposit_cents") // ТЗ: залог
+  priceCents   Int      @map("price_cents")
+  depositCents Int?     @map("deposit_cents")
   categoryId   Int      @map("category_id")
-  status       String   @default("available") // available, rented, maintenance
+  status       String   @default("available")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  // Связи (ТОЛЬКО эти!)
-  category Category @relation(fields: [categoryId], references: [id])
-  rentals  Rental[] // Оборудование может быть в бронированиях
+  // Связи
+  category     Category                @relation(fields: [categoryId], references: [id])
+  rentals      Rental[]
+  availability EquipmentAvailability[]
 
   @@map("equipment")
 }
@@ -62,14 +63,17 @@ model Rental {
   startDate   DateTime @map("start_date")
   endDate     DateTime @map("end_date")
   totalCents  Int      @map("total_cents")
-  status      String   @default("pending") // pending, active, completed, cancelled
+  status      String   @default("pending")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // Связи (ТОЛЬКО эти!)
-  user      User      @relation(fields: [userId], references: [id])
-  equipment Equipment @relation(fields: [equipmentId], references: [id])
-  payments  Payment[] // Бронирование имеет платежи
+  // Связи
+  user         User                    @relation(fields: [userId], references: [id])
+  equipment    Equipment               @relation(fields: [equipmentId], references: [id])
+  payments     Payment[]
+  availability EquipmentAvailability[]
+  promoCodeId  Int?                    @map("promo_code_id") // ДОБАВИТЬ
+  promoCode    PromoCode?              @relation(fields: [promoCodeId], references: [id]) // ДОБАВИТЬ
 
   @@map("rentals")
 }
@@ -79,16 +83,50 @@ model Payment {
   rentalId    Int      @map("rental_id")
   amountCents Int      @map("amount_cents")
   type        String // deposit, payment, refund, penalty
-  status      String   @default("pending") // pending, completed, failed, refunded
+  status      String   @default("pending")
   metadata    Json?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // Связь (ТОЛЬКО эта!)
+  // Связь
   rental Rental @relation(fields: [rentalId], references: [id], onDelete: Cascade)
 
   @@index([rentalId])
   @@index([status])
   @@index([type])
   @@map("payments")
+}
+
+model EquipmentAvailability {
+  id          Int       @id @default(autoincrement()) // ИСПРАВЛЕНО: теперь Int
+  equipmentId Int       @map("equipment_id")
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  date        DateTime // день доступности
+  status      String // "available", "booked", "maintenance"
+  rentalId    Int?      @map("rental_id") // ДОБАВЛЕНО: связь с бронированием
+  rental      Rental?   @relation(fields: [rentalId], references: [id])
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@unique([equipmentId, date])
+  @@map("equipment_availability")
+}
+
+model PromoCode {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique
+  discountType  String   @map("discount_type") // "percentage" или "fixed"
+  discountValue Int      @map("discount_value") // например: 10 для 10% или 500 для 500 рублей
+  validFrom     DateTime @map("valid_from")
+  validUntil    DateTime @map("valid_until")
+  maxUses       Int?     @map("max_uses") // null = без ограничений
+  usedCount     Int      @default(0) @map("used_count")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Связи
+  rentals Rental[]
+
+  @@map("promo_codes")
 }

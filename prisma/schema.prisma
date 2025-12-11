@@ -7,26 +7,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
 model User {
   id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("client") // ТЗ: guest, client, admin
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  name         String
-  email        String  @unique
-  password     String
-  refreshToken String? @map("refresh_token")
-  role         Role    @default(USER)
-
-  equipments Equipment[]
-  categories Category[]
+  // Связи (ТОЛЬКО эти!)
+  rentals Rental[] // Пользователь имеет бронирования
 
   @@map("users")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  parentId  Int?     @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Связи (ТОЛЬКО эти!)
+  parent    Category?   @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children  Category[]  @relation("CategoryToCategory")
+  equipment Equipment[] // Категория содержит оборудование
+
+  @@map("categories")
 }
 
 model Equipment {
@@ -40,27 +48,47 @@ model Equipment {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  // Связи
+  // Связи (ТОЛЬКО эти!)
   category Category @relation(fields: [categoryId], references: [id])
-  User     User?    @relation(fields: [userId], references: [id])
-  userId   Int?
+  rentals  Rental[] // Оборудование может быть в бронированиях
 
   @@map("equipment")
 }
 
-model Category {
-  id        Int      @id @default(autoincrement())
-  name      String
-  parentId  Int?     @map("parent_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+model Rental {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  equipmentId Int      @map("equipment_id")
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  totalCents  Int      @map("total_cents")
+  status      String   @default("pending") // pending, active, completed, cancelled
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // Связи
-  parent    Category?   @relation("CategoryToCategory", fields: [parentId], references: [id])
-  children  Category[]  @relation("CategoryToCategory")
-  equipment Equipment[]
-  User      User?       @relation(fields: [userId], references: [id])
-  userId    Int?
+  // Связи (ТОЛЬКО эти!)
+  user      User      @relation(fields: [userId], references: [id])
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+  payments  Payment[] // Бронирование имеет платежи
 
-  @@map("categories")
+  @@map("rentals")
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  rentalId    Int      @map("rental_id")
+  amountCents Int      @map("amount_cents")
+  type        String // deposit, payment, refund, penalty
+  status      String   @default("pending") // pending, completed, failed, refunded
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Связь (ТОЛЬКО эта!)
+  rental Rental @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+
+  @@index([rentalId])
+  @@index([status])
+  @@index([type])
+  @@map("payments")
 }

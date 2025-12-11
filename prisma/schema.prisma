@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  name         String
+  email        String  @unique
+  password     String
+  refreshToken String? @map("refresh_token")
+  role         Role    @default(USER)
+
+  tasks Rental[]
+
+  @@map("users")
+}
+
+model Rental {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  equipmentId Int
+  startDate   DateTime
+  endDate     DateTime
+  totalCents  Int
+  status      String   @default("pending_payment")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id])
+
+  @@map("tasks")
+}

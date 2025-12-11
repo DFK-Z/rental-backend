@@ -23,7 +23,7 @@ model User {
   refreshToken String? @map("refresh_token")
   role         Role    @default(USER)
 
-  tasks Rental[]
+  rentals Rental[]
 
   @@map("users")
 }
@@ -39,8 +39,22 @@ model Rental {
   totalCents  Int
   status      String   @default("pending_payment")
 
-  userId Int  @map("user_id")
-  user   User @relation(fields: [userId], references: [id])
+  userId  Int       @map("user_id")
+  user    User      @relation(fields: [userId], references: [id])
+  Payment Payment[]
 
-  @@map("tasks")
+  @@map("rentals")
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  rentalId    Int      @map("rental_id")
+  amountCents Int      @map("amount_cents")
+  type        String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rentals Rental @relation(fields: [rentalId], references: [id])
+
+  @@map("payments")
 }

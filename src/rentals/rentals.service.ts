@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRentalDto } from './dto/create-rental.dto';
 import { UpdateRentalDto } from './dto/update-rental.dto';
-import { differenceInDays, isBefore, addDays } from 'date-fns';
+import { differenceInDays, isBefore } from 'date-fns';
 
 @Injectable()
 export class RentalsService {
